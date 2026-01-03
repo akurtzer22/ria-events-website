@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../supabase'
 
@@ -11,57 +11,28 @@ export default function AdminPage() {
   const [editingEvent, setEditingEvent] = useState(null)
   const router = useRouter()
 
-  // Form fields
   const [formData, setFormData] = useState({
     title: '',
     description: '',
     location: '',
     event_date: '',
-    event_time: '',
+    start_time: '',
+    end_time: '',
     dress_code: ''
   })
 
-  // Check if user is logged in
-  // Run the auth check on mount and fetch events directly to avoid
-  // dependency issues with fetchEvents.
-  useEffect(() => {
-    async function init() {
-      const { data: { user } } = await supabase.auth.getUser()
+  const [timeValidation, setTimeValidation] = useState({
+    start_time: true,
+    end_time: true
+  })
 
-      if (!user) {
-        // Not logged in, redirect to login
-        router.push('/login')
-        return
-      }
-
-      setUser(user)
-
-      // Fetch events once on mount
-      try {
-        const { data, error } = await supabase
-          .from('events')
-          .select('*')
-          .order('event_date', { ascending: true })
-
-        if (error) throw error
-        setEvents(data || [])
-      } catch (error) {
-        console.error('Error fetching events:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    init()
-  }, [router])
-
-  async function fetchEvents() {
+  const fetchEvents = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('events')
         .select('*')
         .order('event_date', { ascending: true })
-      
+
       if (error) throw error
       setEvents(data || [])
     } catch (error) {
@@ -69,37 +40,116 @@ export default function AdminPage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
+
+  const checkUser = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser()
+
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    setUser(user)
+    fetchEvents()
+  }, [router, fetchEvents])
+
+  useEffect(() => {
+    checkUser()
+  }, [checkUser])
 
   async function handleLogout() {
     await supabase.auth.signOut()
     router.push('/')
   }
 
+  // Validate and convert time format
+  function validateTime(timeStr) {
+    if (!timeStr) return null
+    
+    // Remove extra spaces
+    timeStr = timeStr.trim()
+    
+    // Match formats: "7:00 PM", "7:30 pm", "19:30", "7:00PM"
+    const formats = [
+      /^(\d{1,2}):(\d{2})\s*(AM|PM|am|pm)$/,  // 7:00 PM
+      /^(\d{1,2}):(\d{2})$/                    // 19:30 (24-hour)
+    ]
+    
+    for (let format of formats) {
+      const match = timeStr.match(format)
+      if (match) {
+        let hours = parseInt(match[1])
+        const minutes = parseInt(match[2])
+        const period = match[3]?.toUpperCase()
+        
+        // Validate minutes
+        if (minutes < 0 || minutes > 59) return null
+        
+        // Convert to 24-hour format
+        if (period) {
+          if (hours < 1 || hours > 12) return null
+          if (period === 'PM' && hours !== 12) hours += 12
+          if (period === 'AM' && hours === 12) hours = 0
+        } else {
+          if (hours < 0 || hours > 23) return null
+        }
+        
+        // Return in HH:MM:SS format for database
+        return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+      }
+    }
+    
+    return null
+  }
+
+  // Format time from database to display (convert 19:30:00 to 7:30 PM)
+  function formatTimeDisplay(timeStr) {
+    if (!timeStr) return ''
+    
+    const [hours24, minutes] = timeStr.split(':')
+    let hours = parseInt(hours24)
+    const period = hours >= 12 ? 'PM' : 'AM'
+    
+    if (hours > 12) hours -= 12
+    if (hours === 0) hours = 12
+    
+    return `${hours}:${minutes} ${period}`
+  }
+
+  function handleTimeChange(field, value) {
+    setFormData({...formData, [field]: value})
+    
+    // Validate as user types
+    const isValid = value === '' || validateTime(value) !== null
+    setTimeValidation({...timeValidation, [field]: isValid})
+  }
+
   function openForm(event = null) {
     if (event) {
-      // Editing existing event
       setEditingEvent(event)
       setFormData({
         title: event.title,
         description: event.description || '',
         location: event.location,
         event_date: event.event_date,
-        event_time: event.event_time,
+        start_time: formatTimeDisplay(event.start_time),
+        end_time: event.end_time ? formatTimeDisplay(event.end_time) : '',
         dress_code: event.dress_code || ''
       })
     } else {
-      // Creating new event
       setEditingEvent(null)
       setFormData({
         title: '',
         description: '',
         location: '',
         event_date: '',
-        event_time: '',
+        start_time: '',
+        end_time: '',
         dress_code: ''
       })
     }
+    setTimeValidation({ start_time: true, end_time: true })
     setShowForm(true)
   }
 
@@ -111,25 +161,47 @@ export default function AdminPage() {
   async function handleSubmit(e) {
     e.preventDefault()
 
+    // Validate times
+    const startTime24 = validateTime(formData.start_time)
+    const endTime24 = formData.end_time ? validateTime(formData.end_time) : null
+    
+    if (!startTime24) {
+      alert('Invalid start time format. Use format like: 7:00 PM or 19:00')
+      return
+    }
+    
+    if (formData.end_time && !endTime24) {
+      alert('Invalid end time format. Use format like: 8:30 PM or 20:30')
+      return
+    }
+
+    // Prepare data with converted times
+    const dataToSave = {
+      title: formData.title,
+      description: formData.description,
+      location: formData.location,
+      event_date: formData.event_date,
+      start_time: startTime24,
+      end_time: endTime24,
+      dress_code: formData.dress_code
+    }
+
     try {
       if (editingEvent) {
-        // Update existing event
         const { error } = await supabase
           .from('events')
-          .update(formData)
+          .update(dataToSave)
           .eq('id', editingEvent.id)
         
         if (error) throw error
       } else {
-        // Create new event
         const { error } = await supabase
           .from('events')
-          .insert([formData])
+          .insert([dataToSave])
         
         if (error) throw error
       }
 
-      // Refresh events list
       fetchEvents()
       closeForm()
     } catch (error) {
@@ -163,7 +235,6 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
           <h1 className="text-2xl font-bold text-purple-600">RIA Admin Dashboard</h1>
@@ -186,13 +257,11 @@ export default function AdminPage() {
       </nav>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        {/* Welcome Message */}
         <div className="mb-6">
           <h2 className="text-3xl font-bold text-gray-900">Welcome, Admin!</h2>
           <p className="text-gray-600">Manage your RIA events below</p>
         </div>
 
-        {/* Add Event Button */}
         <button
           onClick={() => openForm()}
           className="mb-6 bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700"
@@ -200,10 +269,9 @@ export default function AdminPage() {
           + Add New Event
         </button>
 
-        {/* Events List */}
         {events.length === 0 ? (
           <div className="bg-white rounded-lg shadow p-8 text-center">
-            <p className="text-gray-600">No events yet. Click &apos;Add New Event&apos; to create one!</p>
+            <p className="text-gray-600">No events yet. Click &quot;Add New Event&quot; to create one!</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -211,10 +279,16 @@ export default function AdminPage() {
               <div key={event.id} className="bg-white rounded-lg shadow p-6">
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
-                    <h3 className="text-xl font-bold text-purple-600 mb-2">{event.title}</h3>
+                    <h3 className="text-xl font-bold text-purple-600 mb-2">
+                      {event.title}
+                    </h3>
                     <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
                       <div><span className="font-semibold">Date:</span> {event.event_date}</div>
-                      <div><span className="font-semibold">Time:</span> {event.event_time}</div>
+                      <div>
+                        <span className="font-semibold">Time:</span>{' '}
+                        {formatTimeDisplay(event.start_time)}
+                        {event.end_time && ` - ${formatTimeDisplay(event.end_time)}`}
+                      </div>
                       <div><span className="font-semibold">Location:</span> {event.location}</div>
                       {event.dress_code && (
                         <div><span className="font-semibold">Dress:</span> {event.dress_code}</div>
@@ -224,7 +298,7 @@ export default function AdminPage() {
                       <p className="mt-2 text-gray-600">{event.description}</p>
                     )}
                   </div>
-
+                  
                   <div className="flex gap-2 ml-4">
                     <button
                       onClick={() => openForm(event)}
@@ -246,16 +320,14 @@ export default function AdminPage() {
         )}
       </main>
 
-      {/* Event Form Modal */}
       {showForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6 max-h-[90vh] overflow-y-auto">
             <h3 className="text-2xl font-bold text-gray-900 mb-4">
               {editingEvent ? 'Edit Event' : 'Add New Event'}
             </h3>
             
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Title */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Event Title *
@@ -265,12 +337,11 @@ export default function AdminPage() {
                   required
                   value={formData.title}
                   onChange={(e) => setFormData({...formData, title: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g., Jazz Night at Green Mill"
                 />
               </div>
 
-              {/* Location */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Location *
@@ -280,41 +351,73 @@ export default function AdminPage() {
                   required
                   value={formData.location}
                   onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g., 4802 N Broadway, Chicago"
                 />
               </div>
 
-              {/* Date and Time */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Date *
+                </label>
+                <input
+                  type="date"
+                  required
+                  value={formData.event_date}
+                  onChange={(e) => setFormData({...formData, event_date: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Date *
+                    Start Time *
                   </label>
                   <input
-                    type="date"
+                    type="text"
                     required
-                    value={formData.event_date}
-                    onChange={(e) => setFormData({...formData, event_date: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    value={formData.start_time}
+                    onChange={(e) => handleTimeChange('start_time', e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      !timeValidation.start_time ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="e.g., 7:00 PM"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: 7:00 PM or 19:00
+                    {formData.start_time && (
+                      timeValidation.start_time ? 
+                        <span className="text-green-600 ml-2">✓ Valid</span> : 
+                        <span className="text-red-600 ml-2">✗ Invalid format</span>
+                    )}
+                  </p>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Time *
+                    End Time (Optional)
                   </label>
                   <input
-                    type="time"
-                    required
-                    value={formData.event_time}
-                    onChange={(e) => setFormData({...formData, event_time: e.target.value})}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                    type="text"
+                    value={formData.end_time}
+                    onChange={(e) => handleTimeChange('end_time', e.target.value)}
+                    className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent ${
+                      !timeValidation.end_time ? 'border-red-500' : 'border-gray-300'
+                    }`}
+                    placeholder="e.g., 10:00 PM"
                   />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Format: 10:00 PM or 22:00
+                    {formData.end_time && (
+                      timeValidation.end_time ? 
+                        <span className="text-green-600 ml-2">✓ Valid</span> : 
+                        <span className="text-red-600 ml-2">✗ Invalid format</span>
+                    )}
+                  </p>
                 </div>
               </div>
 
-              {/* Dress Code */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Dress Code
@@ -323,12 +426,11 @@ export default function AdminPage() {
                   type="text"
                   value={formData.dress_code}
                   onChange={(e) => setFormData({...formData, dress_code: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g., Cocktail Attire, Casual"
                 />
               </div>
 
-              {/* Description */}
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-2">
                   Description
@@ -337,12 +439,11 @@ export default function AdminPage() {
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
                   rows="4"
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500"
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="Describe the event..."
                 />
               </div>
 
-              {/* Buttons */}
               <div className="flex gap-4 pt-4">
                 <button
                   type="submit"
