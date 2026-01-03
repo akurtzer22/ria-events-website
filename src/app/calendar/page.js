@@ -77,6 +77,20 @@ export default function CalendarPage() {
     'July', 'August', 'September', 'October', 'November', 'December']
   const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
+  // Format time from database to display (convert 19:30:00 to 7:30 PM)
+  function formatTimeDisplay(timeStr) {
+    if (!timeStr) return ''
+
+    const [hours24, minutes] = timeStr.split(':')
+    let hours = parseInt(hours24)
+    const period = hours >= 12 ? 'PM' : 'AM'
+
+    if (hours > 12) hours -= 12
+    if (hours === 0) hours = 12
+
+    return `${hours}:${minutes} ${period}`
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
       {/* Header */}
@@ -157,16 +171,20 @@ export default function CalendarPage() {
                             {date.getDate()}
                           </div>
                           
-                          {dayEvents.map(event => (
-                            <div
-                              key={event.id}
-                              className="text-xs bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 cursor-pointer hover:bg-purple-200"
-                              title={`${event.title} at ${event.event_time}`}
-                            >
-                              <div className="font-semibold truncate">{event.title}</div>
-                              <div className="truncate">{event.event_time}</div>
-                            </div>
-                          ))}
+                          {dayEvents.map(event => {
+                            const timeDisplay = formatTimeDisplay(event.start_time) +
+                              (event.end_time ? ` - ${formatTimeDisplay(event.end_time)}` : '')
+                            return (
+                              <div
+                                key={event.id}
+                                className="text-xs bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 cursor-pointer hover:bg-purple-200"
+                                title={`${event.title} at ${timeDisplay}`}
+                              >
+                                <div className="font-semibold truncate">{event.title}</div>
+                                <div className="truncate">{timeDisplay}</div>
+                              </div>
+                            )
+                          })}
                         </>
                       )}
                     </div>
@@ -194,7 +212,9 @@ export default function CalendarPage() {
                             <span className="font-semibold">Date:</span> {event.event_date}
                           </div>
                           <div>
-                            <span className="font-semibold">Time:</span> {event.event_time}
+                            <span className="font-semibold">Time:</span>{' '}
+                            {formatTimeDisplay(event.start_time)}
+                            {event.end_time && ` - ${formatTimeDisplay(event.end_time)}`}
                           </div>
                           <div>
                             <span className="font-semibold">Location:</span> {event.location}
