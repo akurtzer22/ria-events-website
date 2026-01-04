@@ -103,6 +103,15 @@ export default function CalendarPage() {
             <Link href="/" className="text-gray-700 hover:text-purple-600">
               Home
             </Link>
+            <Link href="/calendar" className="text-gray-700 hover:text-purple-600 font-semibold">
+              Calendar
+            </Link>
+            <Link href="/about" className="text-gray-700 hover:text-purple-600">
+              About
+            </Link>
+            <Link href="/team" className="text-gray-700 hover:text-purple-600">
+              Team
+            </Link>
             <Link href="/login" className="text-gray-700 hover:text-purple-600">
               Admin
             </Link>
@@ -227,6 +236,18 @@ export default function CalendarPage() {
                         </div>
                         {event.description && (
                           <p className="mt-2 text-gray-600">{event.description}</p>
+                        )}
+                        {event.rsvp_link && (
+                          <div className="mt-3">
+                            <a
+                              href={event.rsvp_link}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-block bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition"
+                            >
+                              RSVP Now
+                            </a>
+                          </div>
                         )}
                       </div>
                     ))}

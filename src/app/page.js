@@ -6,13 +6,21 @@ export default function Home() {
       {/* Header */}
       <nav className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-purple-600">RIA</h1>
+          <Link href="/" className="text-2xl font-bold text-purple-600">
+            RIA
+          </Link>
           <div className="space-x-4">
             <Link href="/calendar" className="text-gray-700 hover:text-purple-600">
-              Events
+              Calendar
+            </Link>
+            <Link href="/about" className="text-gray-700 hover:text-purple-600">
+              About
+            </Link>
+            <Link href="/team" className="text-gray-700 hover:text-purple-600">
+              Team
             </Link>
             <Link href="/login" className="text-gray-700 hover:text-purple-600">
-              Admin Login
+              Admin
             </Link>
           </div>
         </div>

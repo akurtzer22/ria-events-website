@@ -18,7 +18,8 @@ export default function AdminPage() {
     event_date: '',
     start_time: '',
     end_time: '',
-    dress_code: ''
+    dress_code: '',
+    rsvp_link: ''
   })
 
   const [timeValidation, setTimeValidation] = useState({
@@ -135,7 +136,8 @@ export default function AdminPage() {
         event_date: event.event_date,
         start_time: formatTimeDisplay(event.start_time),
         end_time: event.end_time ? formatTimeDisplay(event.end_time) : '',
-        dress_code: event.dress_code || ''
+        dress_code: event.dress_code || '',
+        rsvp_link: event.rsvp_link || ''
       })
     } else {
       setEditingEvent(null)
@@ -146,7 +148,8 @@ export default function AdminPage() {
         event_date: '',
         start_time: '',
         end_time: '',
-        dress_code: ''
+        dress_code: '',
+        rsvp_link: ''
       })
     }
     setTimeValidation({ start_time: true, end_time: true })
@@ -183,7 +186,8 @@ export default function AdminPage() {
       event_date: formData.event_date,
       start_time: startTime24,
       end_time: endTime24,
-      dress_code: formData.dress_code
+      dress_code: formData.dress_code,
+      rsvp_link: formData.rsvp_link
     }
 
     try {
@@ -292,6 +296,19 @@ export default function AdminPage() {
                       <div><span className="font-semibold">Location:</span> {event.location}</div>
                       {event.dress_code && (
                         <div><span className="font-semibold">Dress:</span> {event.dress_code}</div>
+                      )}
+                      {event.rsvp_link && (
+                        <div className="col-span-2">
+                          <span className="font-semibold">RSVP:</span>{' '}
+                          <a
+                            href={event.rsvp_link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-purple-600 hover:text-purple-800 underline"
+                          >
+                            {event.rsvp_link}
+                          </a>
+                        </div>
                       )}
                     </div>
                     {event.description && (
@@ -428,6 +445,19 @@ export default function AdminPage() {
                   onChange={(e) => setFormData({...formData, dress_code: e.target.value})}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                   placeholder="e.g., Cocktail Attire, Casual"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  RSVP Link
+                </label>
+                <input
+                  type="url"
+                  value={formData.rsvp_link}
+                  onChange={(e) => setFormData({...formData, rsvp_link: e.target.value})}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  placeholder="e.g., https://forms.google.com/..."
                 />
               </div>
 
