@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 import { supabase } from '../supabase'
 
 export default function CalendarPage() {
@@ -92,32 +92,8 @@ export default function CalendarPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-      {/* Header */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            RIA
-          </Link>
-          <div className="space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-purple-600">
-              Home
-            </Link>
-            <Link href="/calendar" className="text-gray-700 hover:text-purple-600 font-semibold">
-              Calendar
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-purple-600">
-              About
-            </Link>
-            <Link href="/team" className="text-gray-700 hover:text-purple-600">
-              Team
-            </Link>
-            <Link href="/login" className="text-gray-700 hover:text-purple-600">
-              Admin
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50">
+      <Navigation currentPage="/calendar" />
 
       {/* Calendar */}
       <main className="max-w-7xl mx-auto px-4 py-8">
@@ -169,24 +145,24 @@ export default function CalendarPage() {
                     <div
                       key={index}
                       className={`min-h-24 p-2 border rounded ${
-                        !date ? 'bg-gray-50' : isToday ? 'bg-purple-50 border-purple-300' : 'bg-white'
+                        !date ? 'bg-gray-50' : isToday ? 'bg-pink-50 border-pink-300' : 'bg-white'
                       }`}
                     >
                       {date && (
                         <>
                           <div className={`text-sm font-semibold mb-1 ${
-                            isToday ? 'text-purple-600' : 'text-gray-700'
+                            isToday ? 'text-purple-900' : 'text-gray-700'
                           }`}>
                             {date.getDate()}
                           </div>
-                          
+
                           {dayEvents.map(event => {
                             const timeDisplay = formatTimeDisplay(event.start_time) +
                               (event.end_time ? ` - ${formatTimeDisplay(event.end_time)}` : '')
                             return (
                               <div
                                 key={event.id}
-                                className="text-xs bg-purple-100 text-purple-800 rounded px-2 py-1 mb-1 cursor-pointer hover:bg-purple-200"
+                                className="text-xs bg-gradient-to-br from-purple-100 to-pink-100 text-purple-900 rounded px-2 py-1 mb-1 cursor-pointer hover:from-purple-200 hover:to-pink-200 transition-all"
                                 title={`${event.title} at ${timeDisplay}`}
                               >
                                 <div className="font-semibold truncate">{event.title}</div>
@@ -212,8 +188,8 @@ export default function CalendarPage() {
                 ) : (
                   <div className="space-y-4">
                     {events.map(event => (
-                      <div key={event.id} className="border rounded-lg p-4 hover:shadow-md transition">
-                        <h4 className="text-lg font-bold text-purple-600 mb-2">
+                      <div key={event.id} className="border border-purple-200 rounded-lg p-4 hover:shadow-md transition bg-white">
+                        <h4 className="text-lg font-bold bg-gradient-to-r from-purple-900 to-pink-700 bg-clip-text text-transparent mb-2">
                           {event.title}
                         </h4>
                         <div className="grid grid-cols-2 gap-2 text-sm text-gray-700">
@@ -243,7 +219,7 @@ export default function CalendarPage() {
                               href={event.rsvp_link}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-block bg-purple-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-purple-700 transition"
+                              className="inline-block bg-gradient-to-r from-purple-800 to-purple-900 hover:from-pink-600 hover:to-purple-800 text-white px-6 py-2 rounded-lg font-semibold shadow-lg transition-all duration-300"
                             >
                               RSVP Now
                             </a>

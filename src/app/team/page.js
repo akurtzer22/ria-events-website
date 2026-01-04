@@ -1,5 +1,6 @@
 'use client'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function TeamPage() {
   const teamMembers = [
@@ -46,32 +47,8 @@ export default function TeamPage() {
   ]
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-      {/* Header */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            RIA
-          </Link>
-          <div className="space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-purple-600">
-              Home
-            </Link>
-            <Link href="/calendar" className="text-gray-700 hover:text-purple-600">
-              Calendar
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-purple-600">
-              About
-            </Link>
-            <Link href="/team" className="text-gray-700 hover:text-purple-600 font-semibold">
-              Team
-            </Link>
-            <Link href="/login" className="text-gray-700 hover:text-purple-600">
-              Admin
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50">
+      <Navigation currentPage="/team" />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 py-12">
@@ -141,16 +118,16 @@ export default function TeamPage() {
         </div>
 
         {/* Call to Action */}
-        <div className="mt-16 bg-purple-600 rounded-lg p-8 text-center text-white">
+        <div className="mt-16 bg-gradient-to-br from-purple-900 via-purple-800 to-pink-700 rounded-lg p-8 text-center text-white shadow-lg">
           <h2 className="text-2xl font-bold mb-4">
             Interested in Joining Our Team?
           </h2>
-          <p className="mb-6 text-purple-100">
+          <p className="mb-6 text-pink-100">
             We&apos;re always looking for passionate individuals to help organize events and build our community.
           </p>
           <Link
             href="/about#get-involved"
-            className="inline-block bg-white text-purple-600 px-8 py-3 rounded-lg font-semibold hover:bg-purple-50 transition"
+            className="inline-block bg-white text-purple-900 px-8 py-3 rounded-lg font-semibold hover:bg-pink-100 transition shadow-md"
           >
             Learn How to Get Involved
           </Link>

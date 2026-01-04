@@ -1,34 +1,11 @@
 'use client'
 import Link from 'next/link'
+import Navigation from '@/components/Navigation'
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-purple-50 to-white">
-      {/* Header */}
-      <nav className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/" className="text-2xl font-bold text-purple-600">
-            RIA
-          </Link>
-          <div className="space-x-4">
-            <Link href="/" className="text-gray-700 hover:text-purple-600">
-              Home
-            </Link>
-            <Link href="/calendar" className="text-gray-700 hover:text-purple-600">
-              Calendar
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-purple-600 font-semibold">
-              About
-            </Link>
-            <Link href="/team" className="text-gray-700 hover:text-purple-600">
-              Team
-            </Link>
-            <Link href="/login" className="text-gray-700 hover:text-purple-600">
-              Admin
-            </Link>
-          </div>
-        </div>
-      </nav>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-amber-50">
+      <Navigation currentPage="/about" />
 
       {/* Main Content */}
       <main className="max-w-4xl mx-auto px-4 py-12">
@@ -125,7 +102,7 @@ export default function AboutPage() {
 
         {/* Ways to Get Involved Section */}
         <section id="get-involved" className="mb-16 scroll-mt-20">
-          <div className="bg-gradient-to-br from-purple-600 to-purple-700 rounded-lg shadow-lg p-8 text-white">
+          <div className="bg-gradient-to-br from-purple-900 via-purple-800 to-pink-700 rounded-lg shadow-lg p-8 text-white">
             <div className="flex items-center mb-6">
               <div className="bg-white bg-opacity-20 rounded-full p-3 mr-4">
                 <svg
@@ -207,7 +184,7 @@ export default function AboutPage() {
           </p>
           <Link
             href="/calendar"
-            className="inline-block bg-purple-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-purple-700 transition"
+            className="inline-block bg-gradient-to-r from-purple-800 to-purple-900 hover:from-pink-600 hover:to-purple-800 text-white px-8 py-3 rounded-lg font-semibold shadow-lg transition-all duration-300"
           >
             View Events Calendar
           </Link>
